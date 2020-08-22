@@ -7,15 +7,35 @@ import SEO from 'components/SEO';
 import Layout from 'components/Layout';
 import Hero from 'components/Hero';
 import BlogPostCard from 'components/BlogPostCard';
+import PageNavigation from 'components/PageNavigation';
 // import Image from "components/image"
 
-const IndexPage = ({ data }) => {
+//pagecontext is default comes from gatsby-node-js
+const IndexPage = ({ data, pageContext }) => {
+  const posts = data.allMarkdownRemark.edges;
   return (
     <Layout>
       <SEO title="Home" />
       <Hero />
       <main>
-        <BlogPostCard />
+        <PageNavigation
+          currentPage={pageContext.currentPage}
+          numPages={pageContext.numPages}
+        />
+        {posts.map(({ node }, i) => {
+          const title = node.frontmatter.title || 'No title';
+          return (
+            <BlogPostCard
+              key={node.fields.slug}
+              slug={node.fields.slug}
+              title={title}
+              date={node.frontmatter.date}
+              readingTime={node.fields.readingTime.text}
+              excerpt={node.excerpt}
+              image={node.frontmatter.image.childImageSharp.fluid}
+            />
+          );
+        })}
       </main>
     </Layout>
   );
@@ -25,14 +45,17 @@ export default IndexPage;
 
 //This query will get injected automatically when we build our site
 export const indexQuery = graphql`
-  query blogListQuery {
+  query blogListQuery($skip: Int!, $limit: Int!) {
     allMarkdownRemark(
-      filter: { frontmatter: { type: { eq: "post" } } }
+      limit: $limit
+      skip: $skip
+      filter: { frontmatter: { type: { eq: "post" }, published: { eq: true } } }
       sort: { fields: frontmatter___date, order: DESC }
     ) {
       edges {
         node {
           fields {
+            slug
             readingTime {
               text
             }
